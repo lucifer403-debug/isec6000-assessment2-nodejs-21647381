@@ -2,9 +2,10 @@
   "name": "aws-elastic-beanstalk-express-js-sample",
   "version": "1.0.0",
   "description": "Sample Node.js (Express) app for AWS Elastic Beanstalk",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node app.js"
+    "start": "node server.js",
+    "test": "jest --ci --coverage"
   },
   "repository": {
     "type": "git",
@@ -13,5 +14,19 @@
   "license": "MIT-0",
   "dependencies": {
     "express": "^4.22.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^16.0.0",
+    "supertest": "^7.3.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "reporters": [
+      "default",
+      ["jest-junit", { "outputDirectory": "reports", "outputName": "junit.xml" }]
+    ],
+    "coverageDirectory": "reports/coverage",
+    "coverageReporters": ["text", "cobertura", "html"]
   }
 }

@@ -1,0 +1,10 @@
+# Keep the image small and free of secrets or build leftovers.
+node_modules
+reports
+coverage
+tests
+.git
+.github
+Jenkinsfile
+*.md
+.npm
