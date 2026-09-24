@@ -13,7 +13,8 @@
   },
   "license": "MIT-0",
   "dependencies": {
-    "express": "^4.22.2"
+    "express": "^4.22.2",
+    "lodash": "4.17.4"
   },
   "devDependencies": {
     "jest": "^29.7.0",
@@ -24,9 +25,19 @@
     "testEnvironment": "node",
     "reporters": [
       "default",
-      ["jest-junit", { "outputDirectory": "reports", "outputName": "junit.xml" }]
+      [
+        "jest-junit",
+        {
+          "outputDirectory": "reports",
+          "outputName": "junit.xml"
+        }
+      ]
     ],
     "coverageDirectory": "reports/coverage",
-    "coverageReporters": ["text", "cobertura", "html"]
+    "coverageReporters": [
+      "text",
+      "cobertura",
+      "html"
+    ]
   }
 }
