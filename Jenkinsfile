@@ -4,6 +4,8 @@
 //
 // Flow: Checkout -> Install -> Unit Tests -> Dependency Scan ->
 //       Security Gate -> Docker Build -> Docker Push
+// The scan and the gate both use one saved npm audit result
+// (see ci/audit-gate.js).
 //
 // Node stages run inside a Node 16 container (build agent).
 // Docker stages run on the Jenkins controller, which talks to the
@@ -40,6 +42,9 @@ pipeline {
             steps {
                 // Record exactly which commit this build is testing.
                 sh 'git log -1 --pretty=format:"Commit: %h | Author: %an | Message: %s"'
+                // Start every build with an empty reports folder so no file
+                // from an earlier build can be archived with this one.
+                sh 'rm -rf reports && mkdir -p reports'
             }
         }
 
@@ -88,20 +93,13 @@ pipeline {
                 }
             }
             steps {
-                // Produce full reports first (never fails here) so the evidence
-                // is always archived, even when the security gate blocks the build.
+                // ONE scan. npm audit exits non-zero whenever it finds anything,
+                // so the exit code is ignored here; instead ci/audit-gate.js
+                // validates the saved JSON and writes the readable reports.
+                // The Security Gate stage then decides from this same file.
                 sh '''
-                    mkdir -p reports
                     npm audit --json > reports/npm-audit.json || true
-                    npm audit > reports/npm-audit.txt || true
-                    node -e '
-                      const r = require("./reports/npm-audit.json");
-                      const v = (r.metadata && r.metadata.vulnerabilities) || {};
-                      const line = `Vulnerabilities -> critical: ${v.critical||0}, high: ${v.high||0}, moderate: ${v.moderate||0}, low: ${v.low||0}, total: ${v.total||0}`;
-                      console.log(line);
-                      require("fs").writeFileSync("reports/audit-summary.txt", line + "\\n");
-                    '
-                    cat reports/npm-audit.txt
+                    node ci/audit-gate.js report reports/npm-audit.json reports
                 '''
             }
         }
@@ -116,11 +114,15 @@ pipeline {
             }
             steps {
                 script {
-                    // npm audit exits non-zero when any High or Critical issue exists.
-                    def rc = sh(script: 'npm audit --audit-level=high', returnStatus: true)
-                    if (rc != 0) {
+                    // 0 = pass, 1 = High/Critical found, 2 = scan missing or invalid.
+                    def rc = sh(script: 'node ci/audit-gate.js gate reports/npm-audit.json', returnStatus: true)
+                    if (rc == 1) {
                         error('SECURITY GATE FAILED: High/Critical vulnerabilities found. ' +
                               'The image will NOT be built or pushed. See reports/npm-audit.txt.')
+                    }
+                    if (rc != 0) {
+                        error('SECURITY GATE FAILED: the dependency scan did not produce a valid result, ' +
+                              'so risk could not be assessed. The image will NOT be built or pushed.')
                     }
                     echo 'SECURITY GATE PASSED: no High/Critical vulnerabilities found.'
                 }

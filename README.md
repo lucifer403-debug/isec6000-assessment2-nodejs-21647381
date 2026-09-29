@@ -8,6 +8,7 @@ Fork of the AWS Elastic Beanstalk Express sample, extended with a secure Jenkins
 | `app.js` | Express application (exported for testing) |
 | `server.js` | Starts the app on port 8080 |
 | `tests/` | Jest + Supertest unit tests |
+| `ci/audit-gate.js` | Validates the single npm audit result, writes the reports and makes the High/Critical gate decision |
 | `Jenkinsfile` | Pipeline as code (Node 16 agent, tests, scan, security gate, Docker build/push) |
 | `Dockerfile`, `.dockerignore` | Production container image (non-root, Alpine) |
 
